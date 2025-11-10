@@ -1,0 +1,33 @@
+### Test de Health Check (Opcional, si lo agregaste en app.py)
+GET http://127.0.0.1:5000/
+
+### 1. Petición POST exitosa al Chat Manager (Ruta Canónica)
+# Endpoint: /api/chat
+# Método: POST
+# Prueba el flujo completo: Validar -> DB (simulado) -> AI (simulado) -> DB (simulado) -> Respuesta
+POST http://127.0.0.1:5000/api/chat
+Content-Type: application/json
+
+{
+  "session_id": 101,
+  "message": "Hola, estoy trabajando en la estructura de mi proyecto de chatbot. ¿Qué tal Mistral-7B?"
+}
+
+### 2. Petición con Sesión diferente (Prueba de Contexto/Persistencia)
+POST http://127.0.0.1:5000/api/chat
+Content-Type: application/json
+
+{
+  "session_id": 102,
+  "message": "Necesito ayuda con el DBService. ¿Qué ORM me recomiendas para Python?"
+}
+
+### 3. Petición de Error: Mensaje vacío (Prueba de Lógica de Negocio/Validación)
+# Debería devolver un 400 Bad Request debido a la validación del ChatManager/TextUtils.
+POST http://127.00.0.1:5000/api/chat
+Content-Type: application/json
+
+{
+  "session_id": 99,
+  "message": ""
+}
