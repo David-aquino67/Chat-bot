@@ -1,9 +1,8 @@
-### 1.2 Mensaje Inicial (POST /api/chat)
-
+### 2.1 Error de Validación (400) - Mensaje vacío
 POST http://127.0.0.1:5000/api/chat
 Content-Type: application/json
 
 {
   "session_id": 1,
-  "message": "Cual fue la pregunta anterior?"
+  "message": "    "
 }

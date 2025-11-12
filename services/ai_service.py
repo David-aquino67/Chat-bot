@@ -3,70 +3,57 @@ import requests
 from typing import List
 from models.message_dto import MessageDTO
 
-# Formato específico para Mistral-7B-Instruct-v0.2
-# La plantilla de instrucción envuelve el prompt completo.
-MISTRAL_INSTRUCT_TEMPLATE = "[INST] {prompt} [/INST]"
+TINYLAMA_INSTRUCT_TEMPLATE = "<s>[INST] {prompt} [/INST]"
 
-
+"""
+    Servicio Agnóstico para interactuar con el modelo TinyLlama-1.1B-Chat-v1.0.
+    """
 class AIService:
-    """
-    Servicio Agnóstico para interactuar con el modelo Mistral-7B-Instruct-v0.2.
-    """
+
 
     def __init__(self, endpoint_url: str, api_key: str):
-        # ... (El metodo __init__ ya está definido en la respuesta anterior) ...
         self.endpoint_url = endpoint_url
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
 
-    def _format_for_mistral(self, history: List[MessageDTO], current_message: str) -> str:
-        """
-        Adapta el historial de DTOs al formato de prompt de Mistral para mantener el contexto.
-        """
-        # Este es el paso clave de la 'Memoria' (Contexto conversacional)
-        conversation_history = ""
+    def _format_for_mistral(self, history: List[MessageDTO], current_message: str) -> List[dict]:
+        messages = [
+            {"role": "system", "content": "You are a helpful and expert assistant."}
+        ]
+
         for msg in history:
-            # Creamos una estructura simple para que el modelo identifique los turnos
-            role = "USUARIO" if msg.sender == 'usuario' else "ASISTENTE"
-            conversation_history += f"<{role}> {msg.content} </{role}>\n"
+            role = "user" if msg.sender == 'usuario' else "assistant"
+            messages.append({"role": role, "content": msg.content})
 
-        # El prompt completo incluye el historial y la nueva pregunta
-        full_prompt = (
-            f"Tu tarea es responder al siguiente mensaje basándote en el historial si es relevante.\n"
-            f"HISTORIAL: {conversation_history}\n"
-            f"PREGUNTA ACTUAL: {current_message}"
-        )
+        messages.append({"role": "user", "content": current_message})
 
-        # Aplicar la plantilla de instrucción de Mistral
-        return MISTRAL_INSTRUCT_TEMPLATE.format(prompt=full_prompt)
+        return messages
 
     def query_ai_model(self, current_message: str, history: List[MessageDTO]) -> dict:
-        """
-        Consulta el modelo de IA real usando verbos canónicos.
-        """
         start_time = time.time()
-        formatted_prompt = self._format_for_mistral(history, current_message)
 
+        messages = self._format_for_mistral(history, current_message)
         payload = {
-            "inputs": formatted_prompt,
-            "parameters": {
-                "max_new_tokens": 256,
-                "temperature": 0.7
-                # Se pueden añadir más parámetros para controlar la generación
-            }
+            "model": "moonshotai/Kimi-K2-Thinking:novita",
+            "messages": messages,
+            "max_tokens": 256,
+            "temperature": 0.7
         }
 
         try:
-            response = requests.post(self.endpoint_url, headers=self.headers, json=payload, timeout=30)
+            response = requests.post(self.endpoint_url, headers=self.headers, json=payload, timeout=90)
             response.raise_for_status()
+            response_data = response.json()
+            if response_data and 'choices' in response_data and response_data['choices']:
+                message = response_data['choices'][0].get('message', {})
+                raw_response = message.get('content', '')
+            else:
+                raw_response = ""
+                print("ADVERTENCIA: Respuesta de IA exitosa (200 OK), pero contenido 'choices' vacío o nulo.")
 
-            # Asumiendo que la respuesta es una lista de resultados, tomamos el primero
-            raw_response = response.json()[0]['generated_text']
-
-            # Limpiar la respuesta (ya que los modelos a menudo repiten el prompt)
-            bot_reply = raw_response.replace(formatted_prompt, "").strip()
+            bot_reply = raw_response.strip()
 
         except requests.exceptions.RequestException as e:
             bot_reply = f"Error de conexión con el servicio IA: {e}"

@@ -5,10 +5,24 @@ from datetime import datetime
 
 
 class DBService:
-    # ... (El metodo __init__ de DBService ya está definido en la respuesta anterior) ...
+    def __init__(self, config: dict):
+        self.config = config
+        self.connection = None
+        self._connect_to_db()
+
+    def _connect_to_db(self):
+        print("Intentando conectar a MySQL...")
+        try:
+            self.connection = mysql.connector.connect(**self.config)
+            print(" Conexión a MySQL establecida con éxito.")
+        except mysql.connector.Error as err:
+            self.connection = None
+            print(f"Error al conectar a MySQL: {err}")
+            print("Asegúrate de que MySQL está corriendo y las credenciales son correctas.")
+
+            raise
 
     def _execute_query(self, query: str, params: tuple = None, fetch_one: bool = False, fetch_all: bool = False):
-        """Función helper para manejar la ejecución de queries y la conexión."""
         if not self.connection:
             raise Exception("No hay conexión a la base de datos.")
 
@@ -28,21 +42,17 @@ class DBService:
         finally:
             cursor.close()
 
-    # --- Persistencia de Mensajes ---
-
     def save_message(self, message: MessageDTO) -> MessageDTO:
-        """Guarda un MessageDTO en la tabla 'mensaje'."""
         query = """
         INSERT INTO mensaje (sesion_id, contenido, remitente, tiempo_respuesta, fecha_envio)
         VALUES (%s, %s, %s, %s, %s)
         """
-        # Aseguramos que el DTO mapee correctamente a las columnas de MySQL
         params = (
             message.sesion_id,
             message.content,
             message.sender,
             message.tiempo_respuesta,
-            message.timestamp  # Usamos el timestamp del DTO
+            message.timestamp
         )
 
         try:
@@ -54,7 +64,6 @@ class DBService:
             raise
 
     def get_history(self, session_id: int, limit: int) -> List[MessageDTO]:
-        """Recupera los últimos 'limit' mensajes de una sesión."""
         query = """
         SELECT id, sesion_id, contenido, remitente, fecha_envio, tiempo_respuesta
         FROM mensaje
@@ -69,7 +78,6 @@ class DBService:
             history = []
             if results:
                 for row in results:
-                    # Mapeo de resultados de MySQL (dict) de nuevo a DTOs Canónicos
                     history.append(
                         MessageDTO(
                             id=row['id'],
@@ -80,16 +88,13 @@ class DBService:
                             tiempo_respuesta=row['tiempo_respuesta']
                         )
                     )
-            # Retorna en orden cronológico (el más antiguo primero) para el contexto de la IA
             return list(reversed(history))
         except Exception as e:
             print(f"Error al obtener historial de DB: {e}")
             return []
 
-    # --- Creación de Sesiones (Necesario para que el chat funcione) ---
 
     def create_session(self, user_id: int, title: str = "Nueva Conversación") -> SessionDTO:
-        """Crea una nueva sesión y retorna su DTO."""
         query = """
         INSERT INTO sesion (usuario_id, titulo, estado)
         VALUES (%s, %s, %s)
@@ -98,7 +103,6 @@ class DBService:
 
         try:
             new_id = self._execute_query(query, params)
-            # Solo se retorna el DTO con los datos básicos, los mensajes son una lista vacía
             return SessionDTO(id=new_id, user_id=user_id, titulo=title, messages=[])
         except Exception as e:
             print(f"Error al crear sesión: {e}")

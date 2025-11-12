@@ -1,0 +1,8 @@
+### 2.2 Error de Mapeo (400) - Tipo de dato incorrecto
+POST http://127.0.0.1:5000/api/chat
+Content-Type: application/json
+
+{
+  "session_id": "abc",
+  "message": "Esto es un ID de sesión inválido."
+}

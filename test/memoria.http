@@ -1,9 +1,8 @@
-### 1.2 Mensaje Inicial (POST /api/chat)
-
+### 1.3 Mensaje con Contexto (POST /api/chat)
 POST http://127.0.0.1:5000/api/chat
 Content-Type: application/json
 
 {
   "session_id": 1,
-  "message": "Cual fue la pregunta anterior?"
+  "message": "cual fue l pregunta anteior?"
 }
