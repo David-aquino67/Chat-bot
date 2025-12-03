@@ -33,7 +33,7 @@ DB_CONFIG = {
 
 AI_CONFIG = {
     "endpoint_url": "https://router.huggingface.co/v1/chat/completions",
-    "api_key": "pon tu token de huggeace arely"
+    "api_key": "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"
 }
 
 
