@@ -1,0 +1,9 @@
+### 1. Petición de Login Exitosa (POST /login)
+
+POST http://127.0.0.1:5000/login
+Content-Type: application/json
+
+{
+  "email": "david@example.com",
+  "password": "123456"
+}

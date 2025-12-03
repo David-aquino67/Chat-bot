@@ -1,7 +1,7 @@
 import mysql.connector
-from typing import List, Optional
 from models.message_dto import MessageDTO, SessionDTO
 from datetime import datetime
+from typing import List, Optional, Dict, Any
 
 
 class DBService:
@@ -19,7 +19,6 @@ class DBService:
             self.connection = None
             print(f"Error al conectar a MySQL: {err}")
             print("Asegúrate de que MySQL está corriendo y las credenciales son correctas.")
-
             raise
 
     def _execute_query(self, query: str, params: tuple = None, fetch_one: bool = False, fetch_all: bool = False):
@@ -43,6 +42,7 @@ class DBService:
             cursor.close()
 
     def save_message(self, message: MessageDTO) -> MessageDTO:
+        # ... (código save_message existente)
         query = """
         INSERT INTO mensaje (sesion_id, contenido, remitente, tiempo_respuesta, fecha_envio)
         VALUES (%s, %s, %s, %s, %s)
@@ -93,6 +93,28 @@ class DBService:
             print(f"Error al obtener historial de DB: {e}")
             return []
 
+    def insert_message(self, sesion_id: int, contenido: str, remitente: str, fecha_envio: datetime) -> int:
+        query = """
+        INSERT INTO Mensaje (sesion_id, contenido, remitente, fecha_envio)
+        VALUES (%s, %s, %s, %s)
+        """
+        params = (
+            sesion_id,
+            contenido,
+            remitente,
+            fecha_envio.strftime('%Y-%m-%d %H:%M:%S')
+        )
+        return self._execute_query(query, params)
+
+    def fetch_messages_by_session(self, sesion_id: int) -> List[Dict[str, Any]]:
+        query = """
+        SELECT id, sesion_id, contenido, remitente, fecha_envio 
+        FROM Mensaje 
+        WHERE sesion_id = %s 
+        ORDER BY fecha_envio ASC
+        """
+        return self._execute_query(query, (sesion_id,), fetch_all=True)
+
 
     def create_session(self, user_id: int, title: str = "Nueva Conversación") -> SessionDTO:
         query = """
@@ -107,3 +129,59 @@ class DBService:
         except Exception as e:
             print(f"Error al crear sesión: {e}")
             raise
+
+    def fetch_user_sessions(self, user_id: int) -> List[dict]:
+        query = """
+        SELECT id, titulo, fecha_inicio 
+        FROM Sesion 
+        WHERE usuario_id = %s 
+        ORDER BY fecha_inicio DESC
+        """
+        try:
+            return self._execute_query(query, (user_id,), fetch_all=True)
+        except Exception as e:
+            print(f"Error al obtener sesiones de DB: {e}")
+            raise
+
+    def fetch_active_session(self, user_id: int) -> Optional[dict]:
+        query = """
+        SELECT id, titulo, fecha_inicio 
+        FROM Sesion 
+        WHERE usuario_id = %s AND estado = 'activa'
+        ORDER BY fecha_inicio DESC
+        LIMIT 1
+        """
+        try:
+            return self._execute_query(query, (user_id,), fetch_one=True)
+        except Exception as e:
+            print(f"Error al obtener sesión activa de DB: {e}")
+            raise
+
+    def fetch_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        query = "SELECT id, nombre_usuario, email, fecha_creacion, password_hash FROM Usuario WHERE email = %s"
+        return self._execute_query(query, (email,), fetch_one=True)
+
+    def insert_user(self, nombre: str, password_hash: str, email: str, fecha_registro: datetime) -> int:
+        query = """
+        INSERT INTO Usuario (nombre_usuario, password_hash, fecha_creacion, email)
+        VALUES (%s, %s, %s, %s)
+        """
+        params = (
+            nombre,
+            password_hash,
+            fecha_registro.strftime('%Y-%m-%d %H:%M:%S'),
+            email
+        )
+        return self._execute_query(query, params)
+
+    def fetch_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        query = "SELECT id, nombre_usuario, email, fecha_creacion, password_hash FROM Usuario WHERE id = %s"
+        return self._execute_query(query, (user_id,), fetch_one=True)
+
+    def update_user_db(self, updates: str, params: tuple) -> None:
+        sql = f"UPDATE Usuario SET {updates} WHERE id = %s"
+        self._execute_query(sql, params)
+
+    def delete_user_db(self, user_id: int) -> None:
+        query = "DELETE FROM Usuario WHERE id = %s"
+        self._execute_query(query, (user_id,))

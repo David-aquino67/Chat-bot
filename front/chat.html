@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Bot IA</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-app">
+
+        <header class="chat-header">
+            <div class="header-info">
+                <h3>🤖 Asistente de IA</h3>
+                <span class="status-online">En línea</span>
+            </div>
+            <div class="session-info-display">
+                <small>Sesión: <span id="currentSessionId">Cargando...</span></small>
+            </div>
+        </header>
+
+        <div id="chatWindow" class="chat-window">
+            </div>
+
+        <div class="chat-input-area">
+            <input type="text" id="userInput" placeholder="Escribe un mensaje..." required>
+            <button id="sendMessage" aria-label="Enviar mensaje">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+            </button>
+        </div>
+
+    </div>
+
+    <script src="chat.js"></script> </body>
+</html>

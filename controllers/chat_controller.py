@@ -1,4 +1,6 @@
 from flask import request, jsonify, Blueprint
+
+from core import chat_manager
 from core.chat_manager import ChatManager
 from models.message_dto import ResponseDTO
 
@@ -34,3 +36,16 @@ def chat_endpoint():
     else:
         status_code = 400 if response_dto.message.startswith("El mensaje no cumple") else 500
         return jsonify({"success": False, "message": response_dto.message}), status_code
+
+    def handle_chat_message(request_data):
+        # 1. Obtener datos de la solicitud
+        session_id = request_data.get("session_id")  # <-- Clave: La ID de sesión viene del login
+        user_message = request_data.get("message")
+
+        if not session_id:
+            return {"error": "session_id es requerido para continuar el chat"}
+
+        # 2. Llamar al manager
+        response = chat_manager.process_user_message(session_id, user_message)
+
+        return response
